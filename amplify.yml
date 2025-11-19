@@ -1,0 +1,23 @@
+version: 1
+applications:
+  - appRoot: .
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci || npm install
+        build:
+          commands:
+            - npm run build --if-present
+      artifacts:
+        baseDirectory: .
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+    appLifecycle:
+      postBuild:
+        commands:
+          - echo "Amplify build finished for Excellence Services email app"
+

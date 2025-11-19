@@ -261,6 +261,67 @@ After deployment, test your API endpoint:
 - Health check: `https://your-project.vercel.app/api/health`
 - Email API: `https://your-project.vercel.app/api/send-email`
 
+## Deployment to AWS Amplify
+
+### Overview
+AWS Amplify Hosting (Gen 2) can run the static frontend and the Node/Express API as a single full-stack app. This repository now includes an `amplify.yml` build specification so Amplify knows how to install dependencies and package the site.
+
+### Prerequisites
+- AWS account with Amplify Hosting enabled
+- Git repository (GitHub/GitLab/Bitbucket)
+- Verified sender/domain inside Brevo or SendGrid
+
+### 1. Connect the repository
+1. Push the project to your Git provider.
+2. In the AWS console open **Amplify Hosting** → **Get started** → **Connect to Git provider**.
+3. Select the repo/branch you want to deploy.
+
+### 2. Configure build & environment
+1. Amplify auto-detects the new `amplify.yml`. Keep the defaults; it will run `npm ci` (or `npm install`) and `npm run build --if-present`, then publish the entire workspace (Express server + assets).
+2. Under **Build settings → Environment variables**, add the same variables as your `.env`:
+   ```
+   EMAIL_API_KEY=your_api_key_here
+   FROM_EMAIL=info@theexcellenceservices.site
+   FROM_NAME=The Excellence Services
+   PORT=3000
+   ```
+3. Set **Node.js version** to 18.x or newer (the app requires ≥14, but Amplify currently provisions 18 for SSR apps).
+
+### 3. Enable SSR/Node runtime
+1. In the Amplify console, choose **App settings → Build & deploy → Enable server-side rendering**.
+2. For **Server-side build command** keep the defaults; for **Start command** enter:
+   ```
+   node server.js
+   ```
+3. Save. Amplify will provision the backend runtime so `/api/*` routes (served by Express) and the static assets live together.
+
+### 4. Rewrites & redirects
+Add the following rules under **App settings → Rewrites and redirects** so API routes stay on the Node runtime while the SPA serves everything else:
+
+| Source address | Target address | Type | Condition |
+| --- | --- | --- | --- |
+| `/api/<*>` | `/api/<*>` | 200 (Rewrite) | — |
+| `/<*>` | `/index.html` | 200 (Rewrite) | — |
+
+### 5. Deploy & verify
+1. Click **Save and deploy** to trigger the first build.
+2. After the build succeeds, Amplify assigns a default domain such as `https://main.<id>.amplifyapp.com`.
+3. Test:
+   - Health check: `https://<id>.amplifyapp.com/api/health`
+   - Send email: `https://<id>.amplifyapp.com/api/send-email`
+4. Optionally connect a custom domain (App settings → Domain management) and add DNS records.
+
+### CI/CD
+Every push to the connected branch automatically triggers the Amplify pipeline:
+1. Install dependencies (`npm ci || npm install`)
+2. Run optional build step (`npm run build --if-present`)
+3. Publish artifacts + restart the Node runtime with `node server.js`
+
+### Troubleshooting
+- **Build fails**: verify `package-lock.json` exists (for `npm ci`) or switch the command to `npm install`.
+- **API errors**: confirm the environment variables exist in Amplify and that your sender domain is verified.
+- **Custom domain**: add the Amplify-provided DNS records at your registrar and wait for propagation.
+
 ## Security Note
 
 ✅ **Secure Implementation:**
