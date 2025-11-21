@@ -144,6 +144,15 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Email service is running' });
 });
 
+// Serve index.html for all non-API routes (SPA fallback)
+app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Export for Vercel serverless functions
 module.exports = app;
 
