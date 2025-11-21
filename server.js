@@ -144,11 +144,14 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Email service is running' });
 });
 
-// Start server
-app.listen(PORT, () => {
-    if (process.env.NODE_ENV !== 'production') {
+// Export for Vercel serverless functions
+module.exports = app;
+
+// Start server locally (only if not in Vercel environment)
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
         console.log(`Email service API available at http://localhost:${PORT}/api/send-email`);
-    }
-});
+    });
+}
 
