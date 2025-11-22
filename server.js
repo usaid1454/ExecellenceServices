@@ -144,23 +144,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Email service is running' });
 });
 
-// Serve index.html for all non-API routes (SPA fallback)
-app.get('*', (req, res) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'Not found' });
-    }
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Export for Vercel serverless functions
-module.exports = app;
-
-// Start server locally (only if not in Vercel environment)
-if (process.env.VERCEL !== '1') {
-    app.listen(PORT, () => {
+// Start server
+app.listen(PORT, () => {
+    if (process.env.NODE_ENV !== 'production') {
         console.log(`Server is running on http://localhost:${PORT}`);
         console.log(`Email service API available at http://localhost:${PORT}/api/send-email`);
-    });
-}
+    }
+});
 

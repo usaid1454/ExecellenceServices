@@ -251,28 +251,15 @@ Edit `config/config.js` to customize:
 ### Vercel Configuration
 
 The project includes a `vercel.json` file that configures:
-- API routes (`/api/*`) to use the Express server as a serverless function
-- Static file serving for the frontend (all other routes serve `index.html`)
+- API routes to use the Node.js server
+- Static file serving for the frontend
 - Production environment settings
-
-**Important Notes:**
-- The `server.js` file is configured to work both locally and on Vercel
-- Vercel automatically detects and uses the Express app as a serverless function
-- No additional build configuration is needed - Vercel handles everything automatically
 
 ### Post-Deployment
 
-After deployment, test your API endpoints:
-- **Health check**: `https://your-project.vercel.app/api/health` (should return `{"status":"ok"}`)
-- **Email API**: `https://your-project.vercel.app/api/send-email` (POST request)
-- **Frontend**: `https://your-project.vercel.app/` (should load the UI)
-
-### Troubleshooting Vercel Deployment
-
-- **API returns 404**: Make sure environment variables are set in Vercel dashboard
-- **API returns 500**: Check Vercel function logs for error messages
-- **Static files not loading**: Verify `vercel.json` routes are correct
-- **Environment variables not working**: Ensure they're added for the correct environment (Production/Preview/Development)
+After deployment, test your API endpoint:
+- Health check: `https://your-project.vercel.app/api/health`
+- Email API: `https://your-project.vercel.app/api/send-email`
 
 ## Deployment to AWS Amplify
 
