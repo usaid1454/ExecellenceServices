@@ -16,11 +16,6 @@ applications:
       cache:
         paths:
           - node_modules/**/*
-    backend:
-      phases:
-        build:
-          commands:
-            - echo "Backend build phase - dependencies already installed"
     appLifecycle:
       postBuild:
         commands:

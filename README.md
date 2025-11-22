@@ -264,7 +264,7 @@ After deployment, test your API endpoint:
 ## Deployment to AWS Amplify
 
 ### Overview
-AWS Amplify Hosting serves the static frontend, while API routes are handled by AWS Lambda functions. This repository includes Lambda functions in `amplify/backend/function/` that replace the Express server endpoints.
+AWS Amplify Hosting (Gen 2) can run the static frontend and the Node/Express API as a single full-stack app. This repository now includes an `amplify.yml` build specification so Amplify knows how to install dependencies and package the site.
 
 ### Prerequisites
 - AWS account with Amplify Hosting enabled
@@ -277,71 +277,50 @@ AWS Amplify Hosting serves the static frontend, while API routes are handled by 
 3. Select the repo/branch you want to deploy.
 
 ### 2. Configure build & environment
-1. Amplify auto-detects the `amplify.yml`. Keep the defaults.
-2. Under **Hosting → Environment variables**, add:
+1. Amplify auto-detects the new `amplify.yml`. Keep the defaults; it will run `npm ci` (or `npm install`) and `npm run build --if-present`, then publish the entire workspace (Express server + assets).
+2. Under **Build settings → Environment variables**, add the same variables as your `.env`:
    ```
    EMAIL_API_KEY=your_api_key_here
    FROM_EMAIL=info@theexcellenceservices.site
    FROM_NAME=The Excellence Services
+   PORT=3000
    ```
-   Make sure to add these for **Production**, **Preview**, and **Development** environments.
+3. Set **Node.js version** to 18.x or newer (the app requires ≥14, but Amplify currently provisions 18 for SSR apps).
 
-### 3. Create Lambda Functions (if not auto-detected)
-If Amplify doesn't automatically detect the functions in `amplify/backend/function/`:
+### 3. Enable SSR/Node runtime
+1. In the Amplify console, choose **App settings → Build & deploy → Enable server-side rendering**.
+2. For **Server-side build command** keep the defaults; for **Start command** enter:
+   ```
+   node server.js
+   ```
+3. Save. Amplify will provision the backend runtime so `/api/*` routes (served by Express) and the static assets live together.
 
-1. Go to **Hosting → Functions** in your Amplify app
-2. Click **Create function**
-3. For `/api/send-email`:
-   - Function name: `sendEmail`
-   - Source: Connect to your repository
-   - Path: `amplify/backend/function/sendEmail/src`
-   - Environment variables: Add the same variables as above
-4. For `/api/health`:
-   - Function name: `health`
-   - Source: Connect to your repository
-   - Path: `amplify/backend/function/health/src`
+### 4. Rewrites & redirects
+Add the following rules under **App settings → Rewrites and redirects** so API routes stay on the Node runtime while the SPA serves everything else:
 
-### 4. Configure Rewrites & Redirects
-Go to **Hosting → Rewrites and redirects** and add:
-
-```json
-[
-  {
-    "source": "/api/send-email",
-    "target": "/api/send-email",
-    "status": "200",
-    "type": "rewrite"
-  },
-  {
-    "source": "/api/health",
-    "target": "/api/health",
-    "status": "200",
-    "type": "rewrite"
-  }
-]
-```
-
-**Important**: Do NOT add a catch-all `/<*>` rule that rewrites to `/index.html` - this will break the API routes. The static files are served directly by Amplify.
+| Source address | Target address | Type | Condition |
+| --- | --- | --- | --- |
+| `/api/<*>` | `/api/<*>` | 200 (Rewrite) | — |
+| `/<*>` | `/index.html` | 200 (Rewrite) | — |
 
 ### 5. Deploy & verify
-1. Click **Save and deploy** (or push to your branch to trigger auto-deployment)
-2. After the build succeeds, test:
-   - Health check: `https://main.<id>.amplifyapp.com/api/health`
-   - Send email: `https://main.<id>.amplifyapp.com/api/send-email`
-3. Optionally connect a custom domain (App settings → Domain management)
+1. Click **Save and deploy** to trigger the first build.
+2. After the build succeeds, Amplify assigns a default domain such as `https://main.<id>.amplifyapp.com`.
+3. Test:
+   - Health check: `https://<id>.amplifyapp.com/api/health`
+   - Send email: `https://<id>.amplifyapp.com/api/send-email`
+4. Optionally connect a custom domain (App settings → Domain management) and add DNS records.
 
-### Alternative: Using Express Server (if SSR is available)
-If your Amplify plan supports server-side rendering:
-1. Go to **App settings → Build & deploy** (expand App settings in left sidebar)
-2. Enable **Server-side rendering**
-3. Set **Start command** to: `node server.js`
-4. Add rewrite: `/api/<*>` → `/api/<*>` (200 Rewrite)
-5. Redeploy
+### CI/CD
+Every push to the connected branch automatically triggers the Amplify pipeline:
+1. Install dependencies (`npm ci || npm install`)
+2. Run optional build step (`npm run build --if-present`)
+3. Publish artifacts + restart the Node runtime with `node server.js`
 
 ### Troubleshooting
-- **301/404 errors on `/api/*`**: The Lambda functions aren't connected. Check **Hosting → Functions** and ensure they're deployed.
-- **API errors**: Verify environment variables are set in **Hosting → Environment variables** (not just Build settings).
-- **Build fails**: Ensure `package-lock.json` exists and Node.js version is compatible.
+- **Build fails**: verify `package-lock.json` exists (for `npm ci`) or switch the command to `npm install`.
+- **API errors**: confirm the environment variables exist in Amplify and that your sender domain is verified.
+- **Custom domain**: add the Amplify-provided DNS records at your registrar and wait for propagation.
 
 ## Security Note
 
