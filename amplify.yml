@@ -1,0 +1,42 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm install
+    build:
+      commands:
+        - echo "Building static site"
+  artifacts:
+    baseDirectory: /
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+customHeaders:
+  - pattern: '**/*'
+    headers:
+      - key: 'Strict-Transport-Security'
+        value: 'max-age=31536000; includeSubDomains'
+      - key: 'X-Content-Type-Options'
+        value: 'nosniff'
+      - key: 'X-Frame-Options'
+        value: 'DENY'
+      - key: 'X-XSS-Protection'
+        value: '1; mode=block'
+# Redirect rules - prevent 301 errors and trailing slash issues
+redirects:
+  # Remove trailing slashes from API routes (301 -> 200 rewrite)
+  - source: '/api/<*>/'
+    target: '/api/<*>'
+    status: '301'
+  # API routes - pass through without redirect (prevent trailing slash addition)
+  - source: '/api/<*>'
+    target: '/api/<*>'
+    status: '200'
+  # SPA routing - serve index.html for all other routes
+  - source: '/*'
+    target: '/index.html'
+    status: '200'
+
